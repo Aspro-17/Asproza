@@ -17,12 +17,23 @@ const itemForm = el("item-form");
 const itemStatus = el("item-status");
 const projectForm = el("project-form");
 const projectList = el("project-list");
+const projectLogo = el("project-logo");
 const projectSelect = el("item-project");
+const projectItemsList = el("project-items-list");
+const projectItemsTitle = el("project-items-title");
+const projectClear = el("project-clear");
 const chatList = el("chat-list");
 const chatForm = el("chat-form");
 
 let currentUser = null;
 let profile = null;
+let projectFilterId = null;
+const loaded = {
+  feed: false,
+  mine: false,
+  projects: false,
+  chat: false,
+};
 
 const tabs = document.querySelectorAll(".tab");
 const panels = {
@@ -39,6 +50,12 @@ tabs.forEach((tab) => {
     tab.classList.add("active");
     Object.values(panels).forEach((p) => p.classList.add("hidden"));
     panels[tab.dataset.tab].classList.remove("hidden");
+    if (!loaded[tab.dataset.tab]) {
+      if (tab.dataset.tab === "feed") loadFeed();
+      if (tab.dataset.tab === "mine") loadMine();
+      if (tab.dataset.tab === "projects") loadProjects();
+      if (tab.dataset.tab === "chat") loadChat();
+    }
   });
 });
 
@@ -47,7 +64,7 @@ async function setAuthUI(user) {
   if (user) {
     appSection.classList.remove("hidden");
     await loadProfile();
-    await Promise.all([loadFeed(), loadMine(), loadProjects(), loadChat()]);
+    await Promise.all([loadFeed(), loadProjects()]);
   } else {
     appSection.classList.add("hidden");
   }
@@ -94,6 +111,8 @@ sb.auth.onAuthStateChange((_event, session) => {
 });
 
 async function loadFeed() {
+  loaded.feed = true;
+  feedList.textContent = "Loading...";
   const { data, error } = await sb
     .from("items")
     .select("id, title, content, visibility, created_at, media, owner:profiles(full_name)")
@@ -111,6 +130,8 @@ async function loadFeed() {
 }
 
 async function loadMine() {
+  loaded.mine = true;
+  mineList.textContent = "Loading...";
   const { data, error } = await sb
     .from("items")
     .select("id, title, content, visibility, created_at, media")
@@ -128,9 +149,11 @@ async function loadMine() {
 }
 
 async function loadProjects() {
+  loaded.projects = true;
+  projectList.textContent = "Loading...";
   const { data, error } = await sb
     .from("projects")
-    .select("id, title, created_at")
+    .select("id, title, logo_url, created_at")
     .order("created_at", { ascending: false });
 
   projectList.innerHTML = "";
@@ -143,7 +166,17 @@ async function loadProjects() {
   data.forEach((project) => {
     const row = document.createElement("div");
     row.className = "list-item";
-    row.textContent = project.title;
+    row.innerHTML = `
+      <div class="project-row">
+        ${project.logo_url ? `<img class="project-logo" src="${project.logo_url}" alt="${project.title} logo" />` : `<div class="project-logo"></div>`}
+        <strong>${project.title}</strong>
+      </div>
+    `;
+    row.addEventListener("click", () => {
+      projectFilterId = project.id;
+      projectItemsTitle.textContent = `Project items • ${project.title}`;
+      loadProjectItems(project.id);
+    });
     projectList.appendChild(row);
 
     const opt = document.createElement("option");
@@ -151,18 +184,25 @@ async function loadProjects() {
     opt.textContent = project.title;
     projectSelect.appendChild(opt);
   });
+
+  if (!projectFilterId) {
+    projectItemsTitle.textContent = "Project items";
+    projectItemsList.innerHTML = "<div class=\"list-item\">Select a project to view its items.</div>";
+  }
 }
 
 projectForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const title = el("project-title").value.trim();
+  const logoUrl = projectLogo.value.trim();
   if (!title) return;
-  const { error } = await sb.from("projects").insert({ title, owner_id: currentUser.id });
+  const { error } = await sb.from("projects").insert({ title, logo_url: logoUrl || null, owner_id: currentUser.id });
   if (error) {
     projectList.textContent = error.message;
     return;
   }
   el("project-title").value = "";
+  projectLogo.value = "";
   loadProjects();
 });
 
@@ -244,6 +284,10 @@ async function attachTags(itemId, tags) {
 
 async function resolveMediaUrl(media) {
   if (!media?.bucket || !media?.path) return null;
+  if (media.bucket === "media_public") {
+    const { data } = sb.storage.from(media.bucket).getPublicUrl(media.path);
+    return data.publicUrl;
+  }
   const { data, error } = await sb.storage.from(media.bucket).createSignedUrl(media.path, 3600);
   if (error) return null;
   return data.signedUrl;
@@ -281,6 +325,8 @@ async function renderItem(item) {
 }
 
 async function loadChat() {
+  loaded.chat = true;
+  chatList.textContent = "Loading...";
   const { data, error } = await sb
     .from("messages")
     .select("id, content, created_at, sender:profiles(full_name)")
@@ -295,6 +341,34 @@ async function loadChat() {
   data.forEach((m) => appendChat(m));
   chatList.scrollTop = chatList.scrollHeight;
 }
+
+async function loadProjectItems(projectId) {
+  projectItemsList.textContent = "Loading...";
+  const { data, error } = await sb
+    .from("items")
+    .select("id, title, content, visibility, created_at, media, owner:profiles(full_name)")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  projectItemsList.innerHTML = "";
+  if (error) {
+    projectItemsList.textContent = error.message;
+    return;
+  }
+  if (!data.length) {
+    projectItemsList.innerHTML = "<div class=\"list-item\">No items for this project yet.</div>";
+    return;
+  }
+  const nodes = await Promise.all(data.map(renderItem));
+  nodes.forEach((node) => projectItemsList.appendChild(node));
+}
+
+projectClear.addEventListener("click", () => {
+  projectFilterId = null;
+  projectItemsTitle.textContent = "Project items";
+  projectItemsList.innerHTML = "<div class=\"list-item\">Select a project to view its items.</div>";
+});
 
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();

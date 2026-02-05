@@ -154,9 +154,17 @@
         <h3>Projects</h3>
         <form id="project-form" class="inline-form">
           <input type="text" id="project-title" placeholder="New project name" required />
+          <input type="url" id="project-logo" placeholder="Logo URL (optional)" />
           <button class="btn primary" type="submit">Add</button>
         </form>
         <div id="project-list" class="list"></div>
+        <div class="project-items">
+          <div class="project-items-header">
+            <h4 id="project-items-title">Project items</h4>
+            <button id="project-clear" class="btn ghost">Clear filter</button>
+          </div>
+          <div id="project-items-list" class="list"></div>
+        </div>
       </div>
 
       <div class="panel hidden" id="tab-chat">
