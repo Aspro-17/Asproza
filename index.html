@@ -1,0 +1,177 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Asproza</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="bg"></div>
+  <header class="site-header">
+    <div class="logo">Asproza Hub</div>
+    <nav class="nav">
+      <a href="#features">Features</a>
+      <a href="#access">Access</a>
+      <a href="#login">Login</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="hero" id="home">
+      <div class="hero-copy">
+        <p class="eyebrow">Private company workspace</p>
+        <h1>Collect. Share. Collaborate.</h1>
+        <p class="lead">A private space for your company to store knowledge, share media, and chat in one feed.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#login">Sign in</a>
+          <a class="btn ghost" href="#features">See features</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-top">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+        <div class="hero-card-body">
+          <div class="chip">Public feed</div>
+          <div class="chip">Private vault</div>
+          <div class="chip">Tags + Projects</div>
+          <div class="chip">Realtime chat</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" id="features">
+      <div class="card">
+        <h3>Public + Private</h3>
+        <p>Post updates for everyone or keep them locked to your account.</p>
+      </div>
+      <div class="card">
+        <h3>Media Ready</h3>
+        <p>Store text, images, audio, and video with a single upload.</p>
+      </div>
+      <div class="card">
+        <h3>Projects + Tags</h3>
+        <p>Keep knowledge organized with lightweight taxonomy.</p>
+      </div>
+      <div class="card">
+        <h3>Realtime Chat</h3>
+        <p>Public company chat that updates instantly.</p>
+      </div>
+    </section>
+
+    <section class="access" id="access">
+      <h2>Invite only</h2>
+      <p>The homepage is public. Access to the app is invite-only by the admin.</p>
+      <p class="muted">Admin creates users in Supabase and shares login details or password reset links.</p>
+    </section>
+
+    <section class="auth" id="login">
+      <div class="card auth-card">
+        <h2>Sign in</h2>
+        <form id="login-form">
+          <label>
+            <span>Email</span>
+            <input type="email" id="email" placeholder="you@company.com" required />
+          </label>
+          <label>
+            <span>Password</span>
+            <input type="password" id="password" placeholder="••••••••" required />
+          </label>
+          <button class="btn primary" type="submit">Log in</button>
+        </form>
+        <button id="reset-password" class="btn link">Forgot password?</button>
+        <div id="auth-status" class="status"></div>
+      </div>
+    </section>
+
+    <section id="app" class="app hidden">
+      <div class="app-header">
+        <div>
+          <h2>Welcome, <span id="user-name">user</span></h2>
+          <p class="muted">Role: <span id="user-role">user</span></p>
+        </div>
+        <button id="logout" class="btn ghost">Log out</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="feed">Public feed</button>
+        <button class="tab" data-tab="mine">My items</button>
+        <button class="tab" data-tab="upload">Create</button>
+        <button class="tab" data-tab="projects">Projects</button>
+        <button class="tab" data-tab="chat">Chat</button>
+      </div>
+
+      <div class="panel" id="tab-feed">
+        <h3>Public feed</h3>
+        <div id="feed-list" class="list"></div>
+      </div>
+
+      <div class="panel hidden" id="tab-mine">
+        <h3>My items</h3>
+        <div id="mine-list" class="list"></div>
+      </div>
+
+      <div class="panel hidden" id="tab-upload">
+        <h3>Create new item</h3>
+        <form id="item-form" class="grid-form">
+          <label>
+            <span>Title</span>
+            <input type="text" id="item-title" placeholder="Short title" required />
+          </label>
+          <label>
+            <span>Visibility</span>
+            <select id="item-visibility">
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+          </label>
+          <label>
+            <span>Project</span>
+            <select id="item-project"></select>
+          </label>
+          <label class="full">
+            <span>Text</span>
+            <textarea id="item-text" rows="4" placeholder="Optional text content"></textarea>
+          </label>
+          <label class="full">
+            <span>Upload media (optional)</span>
+            <input type="file" id="item-file" />
+          </label>
+          <label class="full">
+            <span>Tags (comma separated)</span>
+            <input type="text" id="item-tags" placeholder="design, onboarding, sprint" />
+          </label>
+          <button class="btn primary" type="submit">Publish</button>
+          <div id="item-status" class="status"></div>
+        </form>
+      </div>
+
+      <div class="panel hidden" id="tab-projects">
+        <h3>Projects</h3>
+        <form id="project-form" class="inline-form">
+          <input type="text" id="project-title" placeholder="New project name" required />
+          <button class="btn primary" type="submit">Add</button>
+        </form>
+        <div id="project-list" class="list"></div>
+      </div>
+
+      <div class="panel hidden" id="tab-chat">
+        <h3>Public chat</h3>
+        <div id="chat-list" class="chat"></div>
+        <form id="chat-form" class="inline-form">
+          <input type="text" id="chat-input" placeholder="Say something..." required />
+          <button class="btn primary" type="submit">Send</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">Delta Hub • Invite-only company knowledge space</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
